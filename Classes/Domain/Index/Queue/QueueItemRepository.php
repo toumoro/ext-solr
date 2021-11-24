@@ -620,13 +620,22 @@ class QueueItemRepository extends AbstractRepository
                 $queryBuilder->expr()->eq('root', $site->getRootPageId()),
                 $queryBuilder->expr()->gt('changed', 'indexed'),
                 $queryBuilder->expr()->lte('changed', time()),
-                $queryBuilder->expr()->eq('errors', $queryBuilder->createNamedParameter(''))
+                $queryBuilder->expr()->eq('errors', $queryBuilder->createNamedParameter('')),
+                $queryBuilder->expr()->orX($queryBuilder->expr()->eq('lockeduntil', 0),$queryBuilder->expr()->gt('lockeduntil',time()))
             )
             ->orderBy('indexing_priority', 'DESC')
             ->addOrderBy('changed', 'DESC')
             ->addOrderBy('uid', 'DESC')
             ->setMaxResults($limit)
             ->execute()->fetchAll();
+
+        foreach($indexQueueItemRecords as $indexQueueItemRecord) {
+           $queryBuilder
+                ->update($this->table)
+                ->where($queryBuilder->expr()->eq('uid', $indexQueueItemRecord['uid']))
+                ->set('lockeduntil', time()+(60*60*30))
+                ->execute();
+        }
 
         return $this->getIndexQueueItemObjectsFromRecords($indexQueueItemRecords);
     }
