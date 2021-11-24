@@ -1,4 +1,7 @@
-<?php declare(strict_types = 1);
+<?php
+
+declare(strict_types=1);
+
 namespace ApacheSolrForTypo3\Solr\Domain\Index\Queue;
 
 /***************************************************************
@@ -33,6 +36,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Cache\CacheManager;
 
 /**
  * Class QueueItemRepository
@@ -58,7 +62,9 @@ class QueueItemRepository extends AbstractRepository
      */
     public function __construct(SolrLogManager $logManager = null)
     {
-        $this->logger = $logManager ?? GeneralUtility::makeInstance(SolrLogManager::class, /** @scrutinizer ignore-type */ __CLASS__);
+        $this->logger = $logManager ?? GeneralUtility::makeInstance(SolrLogManager::class,
+        /** @scrutinizer ignore-type */
+        __CLASS__);
     }
 
     /**
@@ -67,7 +73,7 @@ class QueueItemRepository extends AbstractRepository
      * @param int $rootPageId The root page uid for which to get the last indexed row
      * @return array
      */
-    public function findLastIndexedRow(int $rootPageId) : array
+    public function findLastIndexedRow(int $rootPageId): array
     {
         $queryBuilder = $this->getQueryBuilder();
         $row = $queryBuilder
@@ -88,7 +94,7 @@ class QueueItemRepository extends AbstractRepository
      * @param Site $site
      * @return array Error items for the current site's Index Queue
      */
-    public function findErrorsBySite(Site $site) : array
+    public function findErrorsBySite(Site $site): array
     {
         $queryBuilder = $this->getQueryBuilder();
         $errors = $queryBuilder
@@ -108,7 +114,7 @@ class QueueItemRepository extends AbstractRepository
      *
      * @return int affected rows
      */
-    public function flushAllErrors() : int
+    public function flushAllErrors(): int
     {
         $queryBuilder = $this->getQueryBuilder();
         $affectedRows = $this->getPreparedFlushErrorQuery($queryBuilder)->execute();
@@ -121,7 +127,7 @@ class QueueItemRepository extends AbstractRepository
      * @param Site $site
      * @return int
      */
-    public function flushErrorsBySite(Site $site) : int
+    public function flushErrorsBySite(Site $site): int
     {
         $queryBuilder = $this->getQueryBuilder();
         $affectedRows = $this->getPreparedFlushErrorQuery($queryBuilder)
@@ -138,7 +144,7 @@ class QueueItemRepository extends AbstractRepository
      * @param Item $item
      * @return int affected rows
      */
-    public function flushErrorByItem(Item $item) : int
+    public function flushErrorByItem(Item $item): int
     {
         $queryBuilder = $this->getQueryBuilder();
         $affectedRows = $this->getPreparedFlushErrorQuery($queryBuilder)
@@ -175,7 +181,7 @@ class QueueItemRepository extends AbstractRepository
      * @param int $changedTime The forced change time that should be used for updating
      * @return int affected rows
      */
-    public function updateExistingItemByItemTypeAndItemUidAndRootPageId(string $itemType, int $itemUid, int $rootPageId, int $changedTime, string $indexingConfiguration = '') : int
+    public function updateExistingItemByItemTypeAndItemUidAndRootPageId(string $itemType, int $itemUid, int $rootPageId, int $changedTime, string $indexingConfiguration = ''): int
     {
         $queryBuilder = $this->getQueryBuilder();
         $queryBuilder
@@ -206,7 +212,7 @@ class QueueItemRepository extends AbstractRepository
      * @param string $indexingConfiguration The item's indexing configuration to use. Optional, overwrites existing / determined configuration.
      * @return int the number of inserted rows, which is typically 1
      */
-    public function add(string $itemType, int $itemUid, int $rootPageId, int $changedTime, string $indexingConfiguration) : int
+    public function add(string $itemType, int $itemUid, int $rootPageId, int $changedTime, string $indexingConfiguration): int
     {
         $queryBuilder = $this->getQueryBuilder();
         return $queryBuilder
@@ -220,7 +226,6 @@ class QueueItemRepository extends AbstractRepository
                 'indexing_configuration' => $indexingConfiguration
             ])
             ->execute();
-
     }
 
     /**
@@ -277,7 +282,7 @@ class QueueItemRepository extends AbstractRepository
      * @param int $itemUid The item's uid
      * @return int Timestamp of the most recent content element change
      */
-    public function getLocalizableItemChangedTime(string $itemType, int $itemUid) : int
+    public function getLocalizableItemChangedTime(string $itemType, int $itemUid): int
     {
         $localizedChangedTime = 0;
 
@@ -307,7 +312,7 @@ class QueueItemRepository extends AbstractRepository
      * @param int $itemUid
      * @return QueryBuilder
      */
-    protected function getQueryBuilderForContainsMethods(string $itemType, int $itemUid) : QueryBuilder
+    protected function getQueryBuilderForContainsMethods(string $itemType, int $itemUid): QueryBuilder
     {
         $queryBuilder = $this->getQueryBuilder();
         return $queryBuilder->count('uid')->from($this->table)
@@ -324,7 +329,7 @@ class QueueItemRepository extends AbstractRepository
      * @param int $itemUid The item's uid
      * @return bool TRUE if the item is found in the queue, FALSE otherwise
      */
-    public function containsItem(string $itemType, int $itemUid) : bool
+    public function containsItem(string $itemType, int $itemUid): bool
     {
         return (bool)$this->getQueryBuilderForContainsMethods($itemType, $itemUid)->execute()->fetchColumn(0);
     }
@@ -337,7 +342,7 @@ class QueueItemRepository extends AbstractRepository
      * @param integer $rootPageId
      * @return bool TRUE if the item is found in the queue, FALSE otherwise
      */
-    public function containsItemWithRootPageId(string $itemType, int $itemUid, int $rootPageId) : bool
+    public function containsItemWithRootPageId(string $itemType, int $itemUid, int $rootPageId): bool
     {
         $queryBuilder = $this->getQueryBuilderForContainsMethods($itemType, $itemUid);
         return (bool)$queryBuilder
@@ -354,7 +359,7 @@ class QueueItemRepository extends AbstractRepository
      * @return bool TRUE if the item is found in the queue and marked as
      *      indexed, FALSE otherwise
      */
-    public function containsIndexedItem(string $itemType, int $itemUid) : bool
+    public function containsIndexedItem(string $itemType, int $itemUid): bool
     {
         $queryBuilder = $this->getQueryBuilderForContainsMethods($itemType, $itemUid);
         return (bool)$queryBuilder
@@ -543,7 +548,9 @@ class QueueItemRepository extends AbstractRepository
         }
 
         /** @var Item $item*/
-        $item = GeneralUtility::makeInstance(Item::class, /** @scrutinizer ignore-type */ $indexQueueItemRecord);
+        $item = GeneralUtility::makeInstance(Item::class,
+        /** @scrutinizer ignore-type */
+        $indexQueueItemRecord);
         return $item;
     }
 
@@ -554,7 +561,7 @@ class QueueItemRepository extends AbstractRepository
      * @param int $itemUid item uid
      * @return Item[] An array of items matching $itemType and $itemUid
      */
-    public function findItemsByItemTypeAndItemUid(string $itemType, int $itemUid) : array
+    public function findItemsByItemTypeAndItemUid(string $itemType, int $itemUid): array
     {
         $queryBuilder = $this->getQueryBuilder();
         $compositeExpression = $queryBuilder->expr()->andX(
@@ -572,7 +579,7 @@ class QueueItemRepository extends AbstractRepository
      * @param QueryBuilder|null $queryBuilder QueryBuilder to use
      * @return array
      */
-    protected function getItemsByCompositeExpression(CompositeExpression $expression = null, QueryBuilder $queryBuilder = null) : array
+    protected function getItemsByCompositeExpression(CompositeExpression $expression = null, QueryBuilder $queryBuilder = null): array
     {
         if (!$queryBuilder instanceof QueryBuilder) {
             $queryBuilder = $this->getQueryBuilder();
@@ -592,7 +599,7 @@ class QueueItemRepository extends AbstractRepository
      *
      * @return Item[] all Items from Queue without restrictions
      */
-    public function findAll() : array
+    public function findAll(): array
     {
         $queryBuilder = $this->getQueryBuilder();
         $allRecords = $queryBuilder
@@ -609,35 +616,43 @@ class QueueItemRepository extends AbstractRepository
      * @param int $limit Number of items to get from the queue
      * @return Item[] Items to index to the given solr server
      */
-    public function findItemsToIndex(Site $site, int $limit = 50) : array
+    public function findItemsToIndex(Site $site, int $limit = 50): array
     {
-        $queryBuilder = $this->getQueryBuilder();
-        // determine which items to index with this run
-        $indexQueueItemRecords = $queryBuilder
-            ->select('*')
-            ->from($this->table)
-            ->andWhere(
-                $queryBuilder->expr()->eq('root', $site->getRootPageId()),
-                $queryBuilder->expr()->gt('changed', 'indexed'),
-                $queryBuilder->expr()->lte('changed', time()),
-                $queryBuilder->expr()->eq('errors', $queryBuilder->createNamedParameter('')),
-                $queryBuilder->expr()->orX($queryBuilder->expr()->eq('lockeduntil', 0),$queryBuilder->expr()->lte('lockeduntil',time()))
-            )
-            ->orderBy('indexing_priority', 'DESC')
-            ->addOrderBy('changed', 'DESC')
-            ->addOrderBy('uid', 'DESC')
-            ->setMaxResults($limit)
-            ->execute()->fetchAll();
+        $cache =  GeneralUtility::makeInstance(CacheManager::class)->getCache('tx_solr');
+        if (!$cache->get("lock")) {
+            $cache->set('lock',TRUE,[],60);
+            $queryBuilder = $this->getQueryBuilder();
+            // determine which items to index with this run
+            $indexQueueItemRecords = $queryBuilder
+                ->select('*')
+                ->from($this->table)
+                ->andWhere(
+                    $queryBuilder->expr()->eq('root', $site->getRootPageId()),
+                    $queryBuilder->expr()->gt('changed', 'indexed'),
+                    $queryBuilder->expr()->lte('changed', time()),
+                    $queryBuilder->expr()->eq('errors', $queryBuilder->createNamedParameter('')),
+                    $queryBuilder->expr()->orX($queryBuilder->expr()->eq('lockeduntil', 0), $queryBuilder->expr()->lte('lockeduntil', time()))
+                )
+                ->orderBy('indexing_priority', 'DESC')
+                ->addOrderBy('changed', 'DESC')
+                ->addOrderBy('uid', 'DESC')
+                ->setMaxResults($limit)
+                ->execute()->fetchAll();
 
-        foreach($indexQueueItemRecords as $indexQueueItemRecord) {
-           $queryBuilder
+            $uidsToUpdate = [];
+            foreach ($indexQueueItemRecords as $indexQueueItemRecord) {
+                $uidsToUpdate[] = $indexQueueItemRecord['uid'];
+            }
+            $queryBuilder
                 ->update($this->table)
-                ->where($queryBuilder->expr()->eq('uid', $indexQueueItemRecord['uid']))
-                ->set('lockeduntil', time()+(60*60*30))
+                ->where($queryBuilder->expr()->in('uid', $uidsToUpdate))
+                ->set('lockeduntil', time() + (60 * 60 * 15))
                 ->execute();
+            $cache->set('lock',FALSE,[],60);
+            return $this->getIndexQueueItemObjectsFromRecords($indexQueueItemRecords);
+        } else {
+            return [];
         }
-
-        return $this->getIndexQueueItemObjectsFromRecords($indexQueueItemRecords);
     }
 
     /**
@@ -672,7 +687,7 @@ class QueueItemRepository extends AbstractRepository
      * @param array $indexQueueItemRecords Array of plain index queue records
      * @return array Array of ApacheSolrForTypo3\Solr\IndexQueue\Item objects
      */
-    protected function getIndexQueueItemObjectsFromRecords(array $indexQueueItemRecords) : array
+    protected function getIndexQueueItemObjectsFromRecords(array $indexQueueItemRecords): array
     {
         $tableRecords = $this->getAllQueueItemRecordsByUidsGroupedByTable($indexQueueItemRecords);
         return $this->getQueueItemObjectsByRecords($indexQueueItemRecords, $tableRecords);
@@ -684,7 +699,7 @@ class QueueItemRepository extends AbstractRepository
      * @param array $indexQueueItemRecords
      * @return array
      */
-    protected function getAllQueueItemRecordsByUidsGroupedByTable(array $indexQueueItemRecords) : array
+    protected function getAllQueueItemRecordsByUidsGroupedByTable(array $indexQueueItemRecords): array
     {
         $tableUids = [];
         $tableRecords = [];
@@ -743,15 +758,17 @@ class QueueItemRepository extends AbstractRepository
      * @param array $tableRecords
      * @return array
      */
-    protected function getQueueItemObjectsByRecords(array $indexQueueItemRecords, array $tableRecords) : array
+    protected function getQueueItemObjectsByRecords(array $indexQueueItemRecords, array $tableRecords): array
     {
         $indexQueueItems = [];
         foreach ($indexQueueItemRecords as $indexQueueItemRecord) {
             if (isset($tableRecords[$indexQueueItemRecord['item_type']][$indexQueueItemRecord['item_uid']])) {
                 $indexQueueItems[] = GeneralUtility::makeInstance(
                     Item::class,
-                    /** @scrutinizer ignore-type */ $indexQueueItemRecord,
-                    /** @scrutinizer ignore-type */ $tableRecords[$indexQueueItemRecord['item_type']][$indexQueueItemRecord['item_uid']]
+                    /** @scrutinizer ignore-type */
+                    $indexQueueItemRecord,
+                    /** @scrutinizer ignore-type */
+                    $tableRecords[$indexQueueItemRecord['item_type']][$indexQueueItemRecord['item_uid']]
                 );
             } else {
                 $this->logger->log(
@@ -761,8 +778,10 @@ class QueueItemRepository extends AbstractRepository
                         $indexQueueItemRecord
                     ]
                 );
-                $this->deleteItem($indexQueueItemRecord['item_type'],
-                    $indexQueueItemRecord['item_uid']);
+                $this->deleteItem(
+                    $indexQueueItemRecord['item_type'],
+                    $indexQueueItemRecord['item_uid']
+                );
             }
         }
 
@@ -796,7 +815,7 @@ class QueueItemRepository extends AbstractRepository
      * @param Item $item
      * @return int affected rows
      */
-    public function updateIndexTimeByItem(Item $item) : int
+    public function updateIndexTimeByItem(Item $item): int
     {
         $queryBuilder = $this->getQueryBuilder();
         return (int)$queryBuilder
@@ -813,7 +832,7 @@ class QueueItemRepository extends AbstractRepository
      * @param int $changedTime
      * @return int affected rows
      */
-    public function updateChangedTimeByItem(Item $item, int $changedTime) : int
+    public function updateChangedTimeByItem(Item $item, int $changedTime): int
     {
         $queryBuilder = $this->getQueryBuilder();
         return (int)$queryBuilder
@@ -833,7 +852,7 @@ class QueueItemRepository extends AbstractRepository
      * @internal
      * @throws DBALException
      */
-    public function initializeByNativeSQLStatement(string $sqlStatement) : int
+    public function initializeByNativeSQLStatement(string $sqlStatement): int
     {
         return $this->getQueryBuilder()->getConnection()->exec($sqlStatement);
     }
@@ -844,7 +863,7 @@ class QueueItemRepository extends AbstractRepository
      * @param string $identifier identifier of the mount point
      * @return array pageIds from mountPoints that allready have a queue entry
      */
-    public function findPageIdsOfExistingMountPagesByMountIdentifier(string $identifier) : array
+    public function findPageIdsOfExistingMountPagesByMountIdentifier(string $identifier): array
     {
         $queryBuilder = $this->getQueryBuilder();
         $resultSet = $queryBuilder
@@ -876,7 +895,7 @@ class QueueItemRepository extends AbstractRepository
      * @param array $mountedPids An array of mounted page IDs
      * @return array
      */
-    public function findAllIndexQueueItemsByRootPidAndMountIdentifierAndMountedPids(int $rootPid, string $identifier, array $mountedPids) : array
+    public function findAllIndexQueueItemsByRootPidAndMountIdentifierAndMountedPids(int $rootPid, string $identifier, array $mountedPids): array
     {
         $queryBuilder = $this->getQueryBuilder();
         return $queryBuilder
