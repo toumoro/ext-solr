@@ -621,7 +621,7 @@ class QueueItemRepository extends AbstractRepository
                 $queryBuilder->expr()->gt('changed', 'indexed'),
                 $queryBuilder->expr()->lte('changed', time()),
                 $queryBuilder->expr()->eq('errors', $queryBuilder->createNamedParameter('')),
-                $queryBuilder->expr()->orX($queryBuilder->expr()->eq('lockeduntil', 0),$queryBuilder->expr()->gt('lockeduntil',time()))
+                $queryBuilder->expr()->orX($queryBuilder->expr()->eq('lockeduntil', 0),$queryBuilder->expr()->lte('lockeduntil',time()))
             )
             ->orderBy('indexing_priority', 'DESC')
             ->addOrderBy('changed', 'DESC')
