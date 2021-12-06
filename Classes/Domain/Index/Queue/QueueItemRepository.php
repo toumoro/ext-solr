@@ -643,11 +643,13 @@ class QueueItemRepository extends AbstractRepository
             foreach ($indexQueueItemRecords as $indexQueueItemRecord) {
                 $uidsToUpdate[] = $indexQueueItemRecord['uid'];
             }
-            $queryBuilder
-                ->update($this->table)
-                ->where($queryBuilder->expr()->in('uid', $uidsToUpdate))
-                ->set('lockeduntil', time() + (60 * 60 * 15))
-                ->execute();
+            if (!empty($uidsToUpdate)) {
+                $queryBuilder
+                    ->update($this->table)
+                    ->where($queryBuilder->expr()->in('uid', $uidsToUpdate))
+                    ->set('lockeduntil', time() + (60 * 60 * 15))
+                    ->execute();
+            }
             $cache->set('lock',FALSE,[],60);
             return $this->getIndexQueueItemObjectsFromRecords($indexQueueItemRecords);
         } else {
